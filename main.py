@@ -28,13 +28,14 @@ def transparentOverlay(src, overlay, pos=(0, 0), scale=1):
             src[x + i][y + j] = alpha * overlay[i][j][:3] + (1 - alpha) * src[x + i][y + j]
     return src
 
+# Debug mode state
+debug = False
 while 1:
     ret, frame = cap.read()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
     for (x,y,w,h) in faces:
-        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
         roi_gray = gray[y:y+h, x:x+w]
         roi_color = frame[y:y+h, x:x+w]
 
@@ -48,16 +49,13 @@ while 1:
                 # If is first eye record the cordinates
                 ey1 = ey
                 eye += 1
-                print(eye)
-            else:
+            elif(eye == 1):
                 # Rotating glasses
                 if(ey1 > ey):
                     glasses_rotated = imutils.rotate(glasses, abs(int(ey1+ey1/2)-int(ey+ey/2)))
                 else:
                     glasses_rotated = imutils.rotate(glasses, -abs(int(ey1+ey1/2)-int(ey+ey/2)))
 
-                # Eye middle point
-                cv2.circle(roi_color, (ex, int(ey+ey/2)), 4, (255, 0, 0), -1)
                 # Glasses size
                 glasses_symin = int(y + 1.2 * h / 5)
                 glasses_symax = int(y + 2.8 * h / 5)
@@ -69,11 +67,23 @@ while 1:
                 specs = cv2.resize(glasses_rotated, (w, sh_glasses),interpolation=cv2.INTER_CUBIC)
                 transparentOverlay(face_glasses_roi_color,specs)
 
-            # Eye rectangle marker
-            cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
+            if(debug == True):
+                # Face rectangle marker
+                cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
+                # Eye rectangle marker
+                cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
+                # Eye middle point
+                cv2.circle(roi_color, (ex, int(ey+ey/2)), 4, (255, 0, 0), -1)
+
 
     # Name of frame
     cv2.imshow('Glasses',frame)
+
+    # Debug mode (space)
+    k = cv2.waitKey(30) & 0xff
+    if k == 32:
+        debug = not debug
+
     # Quit program (esc)
     k = cv2.waitKey(30) & 0xff
     if k == 27:
